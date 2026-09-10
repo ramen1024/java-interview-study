@@ -129,7 +129,15 @@ FSRS 调度（15 例）、判分规则（28 例）、搜索切词（11 例）、
 
 - **不要换成 Knife4j**：最新版 4.5.0 绑定的 springdoc 2.3 与 Spring Boot 3.5 不兼容，
   会启动失败。现用官方 springdoc 2.8.17
-- **TypeScript 停在 5.9**：TS 7 是 Go 重写版，与 vue-tsc 的配合未验证，不要升
+- **TypeScript 停在 5.9，不要升**：TS 7 是 Go 重写版，vue-tsc 目前完全跑不起来。
+  实测（vue-tsc 3.3.11 + typescript 7.0.2）它直接崩在启动阶段：
+  `ERR_PACKAGE_PATH_NOT_EXPORTED: Package subpath './lib/tsc' is not defined by "exports"`。
+  根因是 TS 7 的 `exports` 里没有 `./lib/tsc`，根导出只剩 `version` / `versionMajorMinor`，
+  `createProgram`、`createLanguageService`、`ModuleKind` 全部消失（编译器 API 整体挪到
+  `./unstable/*` 且尚未定型），而 vue-tsc 经 `@volar/typescript` 依赖的正是这套经典 API。
+  **这里有个陷阱**：vue-tsc 的 peer 声明是无上界的 `typescript: ">=5.0.0"`，
+  包管理器不会拦你，装上去跑构建才会发现崩。npm 上 `typescript` 的 `latest`
+  已经是 7.x，所以别随手执行 `pnpm add -D typescript`
 
 **前端**
 
