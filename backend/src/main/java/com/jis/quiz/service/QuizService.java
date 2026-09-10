@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -65,6 +64,7 @@ public class QuizService {
     private final ContentQueryService contentQueryService;
     private final StudyDailyMapper studyDailyMapper;
     private final ObjectMapper objectMapper;
+    private final QuizGrader quizGrader;
 
     /**
      * 随机抽题。
@@ -117,7 +117,7 @@ public class QuizService {
                 );
             }
 
-            Graded graded = grade(question, answer);
+            QuizGrader.Graded graded = quizGrader.grade(question, answer);
             if (graded.correct()) {
                 correctCount++;
             }
@@ -195,110 +195,6 @@ public class QuizService {
     }
 
     // ------------------------------------------------------------------
-    // 判分
-    // ------------------------------------------------------------------
-
-    private Graded grade(QuizQuestion question, QuizAnswer answer) {
-        if (QuizQuestion.TYPE_CLOZE.equals(question.getType())) {
-            return gradeCloze(question, answer);
-        }
-
-        return gradeChoiceLike(question, answer);
-    }
-
-    private Graded gradeChoiceLike(QuizQuestion question, QuizAnswer answer) {
-        String expected = normalizeAnswer(question.getAnswer());
-        String actual = normalizeAnswer(answer.answer());
-
-        boolean correct;
-        if (QuizQuestion.TYPE_MULTI.equals(question.getType())) {
-            // 多选按集合比较，作答顺序不影响对错
-            correct = letterSetOf(expected).equals(letterSetOf(actual));
-        } else {
-            correct = expected.equals(actual);
-        }
-
-        // 多选题把用户作答规范化成字母升序，便于回显与入库后比对
-        String normalizedUserAnswer = QuizQuestion.TYPE_MULTI.equals(question.getType())
-                ? joinLetters(letterSetOf(actual))
-                : actual;
-
-        return new Graded(correct, normalizedUserAnswer, null, null);
-    }
-
-    private Graded gradeCloze(QuizQuestion question, QuizAnswer answer) {
-        List<List<String>> acceptedBlanks = readBlanks(question.getBlanksJson());
-        List<String> submitted = answer.blanks() == null ? List.of() : answer.blanks();
-
-        List<Boolean> blankResults = new ArrayList<>();
-        List<String> normalizedSubmitted = new ArrayList<>();
-
-        for (int index = 0; index < acceptedBlanks.size(); index++) {
-            String value = index < submitted.size() ? submitted.get(index) : null;
-            normalizedSubmitted.add(value == null ? "" : value.strip());
-            blankResults.add(matchesAny(value, acceptedBlanks.get(index)));
-        }
-
-        boolean correct = !blankResults.isEmpty()
-                && blankResults.stream()
-                .allMatch(Boolean::booleanValue);
-
-        return new Graded(
-                correct,
-                String.join(" | ", normalizedSubmitted),
-                blankResults,
-                acceptedBlanks
-        );
-    }
-
-    /**
-     * 挖空题的答案比对：忽略大小写、首尾空白，并把连续空白折叠成一个空格。
-     *
-     * <p>写代码时多敲一个空格不该算错，但也不能宽松到把空白全部删掉——
-     * 「a b」和「ab」在代码里是两个不同的东西。
-     */
-    private boolean matchesAny(String submitted, List<String> accepted) {
-        String normalized = normalizeBlank(submitted);
-        if (normalized.isEmpty()) {
-            return false;
-        }
-
-        return accepted.stream()
-                .anyMatch(candidate -> normalizeBlank(candidate).equals(normalized));
-    }
-
-    private String normalizeBlank(String value) {
-        return value == null
-                ? ""
-                : value.strip()
-                        .replaceAll("\\s+", " ")
-                        .toLowerCase(Locale.ROOT);
-    }
-
-    private String normalizeAnswer(String value) {
-        return value == null ? "" : value.strip()
-                .toUpperCase(Locale.ROOT);
-    }
-
-    private Set<Character> letterSetOf(String value) {
-        Set<Character> letters = new TreeSet<>();
-        for (char character : value.toCharArray()) {
-            if (Character.isLetterOrDigit(character)) {
-                letters.add(character);
-            }
-        }
-
-        return letters;
-    }
-
-    private String joinLetters(Set<Character> letters) {
-        StringBuilder builder = new StringBuilder();
-        letters.forEach(builder::append);
-
-        return builder.toString();
-    }
-
-    // ------------------------------------------------------------------
     // 组装
     // ------------------------------------------------------------------
 
@@ -329,7 +225,7 @@ public class QuizService {
         List<QuizQuestionVO> result = new ArrayList<>();
         for (QuizQuestion question : questions) {
             KnowledgePoint kp = question.getKpId() == null ? null : kpById.get(question.getKpId());
-            List<List<String>> blanks = readBlanks(question.getBlanksJson());
+            List<List<String>> blanks = quizGrader.readBlanks(question.getBlanksJson());
 
             result.add(new QuizQuestionVO(
                     question.getQKey(),
@@ -445,24 +341,5 @@ public class QuizService {
         }
 
         return moduleIds;
-    }
-
-    /**
-     * 单题判分结果。
-     *
-     * @param userAnswer     规范化后的用户作答
-     * @param blankResults   挖空题各空对错；非挖空题为 null
-     * @param acceptedBlanks 挖空题各空可接受答案；非挖空题为 null
-     */
-    private record Graded(
-
-            boolean correct,
-
-            String userAnswer,
-
-            List<Boolean> blankResults,
-
-            List<List<String>> acceptedBlanks
-    ) {
     }
 }
