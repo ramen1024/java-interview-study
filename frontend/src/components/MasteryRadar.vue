@@ -28,6 +28,7 @@ function render(): void {
   }
 
   chart = chart ?? echarts.init(container.value)
+  ensureResizeObserver()
   const isDark = ui.theme === 'dark'
   const axisColor = isDark ? '#7b8296' : '#8b93a7'
   const splitColor = isDark ? '#2c313d' : '#e6e8f0'
@@ -81,23 +82,42 @@ function disposeChart(): void {
   chart = null
 }
 
-onMounted(() => {
-  render()
-
-  if (container.value) {
-    resizeObserver = new ResizeObserver(() => chart?.resize())
-    resizeObserver.observe(container.value)
+/**
+ * 观察容器尺寸变化，窗口缩放时让 echarts 重新布局。
+ *
+ * 必须在容器真正挂载后才建立观察，所以由 render() 调用而不是
+ * 在 onMounted 里直接做——那时容器受 v-if 控制尚未存在。
+ * 用 chart 是否为空做幂等判断，重复调用不会叠加多个观察者。
+ */
+function ensureResizeObserver(): void {
+  if (resizeObserver || !container.value) {
+    return
   }
-})
+
+  resizeObserver = new ResizeObserver(() => chart?.resize())
+  resizeObserver.observe(container.value)
+}
+
+onMounted(render)
 
 onUnmounted(() => {
   resizeObserver?.disconnect()
+  resizeObserver = null
+  container.value = null
   disposeChart()
 })
 
-watch(() => props.modules, render, { deep: true })
-// 切换主题要重画，否则轴线颜色会停留在旧主题上
-watch(() => ui.theme, render)
+// flush: 'post' 是必需的，不是可选优化。
+//
+// 容器 div 受 v-if 控制，数据没到时它根本不在 DOM 里、ref 为 null。
+// 而 watcher 默认在 'pre' 时机执行——回调跑在组件重新渲染**之前**，
+// 此时 ref 仍是 null，render() 会提前返回，之后再也没有机会被调用，
+// 结果是容器存在、尺寸正常、但里面永远是空的（echarts 从未初始化）。
+// 'post' 保证回调在 DOM 更新之后执行，ref 此时已挂上。
+watch(() => props.modules, render, { deep: true, flush: 'post' })
+
+// 主题切换只改颜色，不涉及容器挂载，但同样放在 DOM 更新后执行更稳妥
+watch(() => ui.theme, render, { flush: 'post' })
 </script>
 
 <template>
