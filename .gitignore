@@ -1,0 +1,57 @@
+### Java / Maven ###
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+.mvn/timing.properties
+
+### Node / 前端 ###
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+stats.html
+
+### IDE ###
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+!.vscode/extensions.json
+*.swp
+*.swo
+
+### 编辑器 / 工具元数据 ###
+.zcode/
+
+### 系统文件 ###
+.DS_Store
+Thumbs.db
+desktop.ini
+
+### 备份与临时文件 ###
+*.zip
+*.bak
+*.tmp
+*.log
+logs/
+/tmp/
+
+### 本地私有配置（含密码，不提交） ###
+backend/src/main/resources/application-local.yml
+.env
+.env.local

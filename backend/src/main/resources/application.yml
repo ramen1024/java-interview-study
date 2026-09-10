@@ -1,0 +1,74 @@
+server:
+  # 8080 被本机其他服务占用，固定用 8081；前端 Vite 代理指向此端口
+  port: 8081
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+
+spring:
+  application:
+    name: jis-backend
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${JIS_DB_HOST:localhost}:${JIS_DB_PORT:3306}/jis?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
+    # 本地开发默认值，生产一律用环境变量覆盖
+    username: ${JIS_DB_USERNAME:root}
+    password: ${JIS_DB_PASSWORD:root}
+    hikari:
+      pool-name: JisHikariPool
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+          max-wait: 3000ms
+
+  jackson:
+    time-zone: Asia/Shanghai
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    # 开发期打印 SQL，排查问题很方便；上生产换成 NoLoggingImpl
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
+
+jis:
+  jwt:
+    # 必须在 32 字节以上，HS256 才有足够强度；生产环境务必用环境变量覆盖
+    secret: ${JIS_JWT_SECRET:jis-dev-only-secret-please-override-in-production}
+    access-token-ttl: 2h
+    refresh-token-ttl: 7d
+    issuer: jis
+  content:
+    # 相对路径按后端进程的工作目录解析，默认指向仓库根下的 content/
+    root: ${JIS_CONTENT_ROOT:../content}
+    auto-import: ${JIS_AUTO_IMPORT:true}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+
+logging:
+  level:
+    com.jis: debug
+    org.springframework.web: info
