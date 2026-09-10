@@ -379,6 +379,7 @@ WHERE t.user_id = ? AND t.is_correct = 0
 | 评分按钮点击偶发失败 | `transition: all` 配合 hover 位移，指针停在边缘时元素反复进出悬停状态变成移动靶 |
 | 响应里的 `dueAt` 与实际入库值不一致 | 响应带纳秒精度，而列是秒精度 |
 | 缓存反序列化失败被误判成「数据不存在」 | 未区分「未命中」与「读取失败」，会导致 404 |
+| 统计页雷达图完全不渲染 | 容器受 `v-if` 控制，watcher 默认在 DOM 更新**之前**执行（`flush: 'pre'`），ref 为 null 导致初始化提前返回且再无机会。改为 `flush: 'post'`；同一根因还让 `ResizeObserver` 从未挂上 |
 
 ---
 
