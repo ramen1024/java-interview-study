@@ -9,7 +9,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -432,6 +431,52 @@ public class ContentQueryService {
         );
     }
 
+    /**
+     * 按给定 id 顺序批量组装卡片列表项。
+     *
+     * <p>复习队列、收藏夹、卡片列表都需要同一套加工逻辑（模块名、题目数、
+     * 我的掌握度），集中在这里避免三处实现出现字段不一致。
+     */
+    public List<KnowledgePointListItemVO> describeCards(List<Long> kpIds, Long userId) {
+        if (kpIds.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, KnowledgePoint> kpById = knowledgePointMapper.selectByIds(kpIds)
+                .stream()
+                .collect(LinkedHashMap::new, (map, kp) -> map.put(kp.getId(), kp), Map::putAll);
+
+        Map<Long, ContentModule> modules = loadModules(new ArrayList<>(kpById.values()));
+        Map<Long, Integer> questionCounts = loadQuestionCounts(kpIds);
+        Map<Long, ReviewState> reviewStates = loadReviewStates(userId, kpIds);
+
+        List<KnowledgePointListItemVO> items = new ArrayList<>();
+        for (Long kpId : kpIds) {
+            KnowledgePoint kp = kpById.get(kpId);
+            if (kp == null) {
+                // 内容导入时删除了卡片，而复习记录还在，跳过而不是抛错
+                continue;
+            }
+
+            ReviewState state = reviewStates.get(kpId);
+            items.add(new KnowledgePointListItemVO(
+                    kp.getSlug(),
+                    kp.getTitle(),
+                    moduleSlug(modules, kp.getModuleId()),
+                    moduleName(modules, kp.getModuleId()),
+                    splitTags(kp.getTags()),
+                    kp.getDifficulty(),
+                    kp.getFrequency(),
+                    questionCounts.getOrDefault(kpId, 0),
+                    state == null ? null : state.getState(),
+                    state == null || state.getDueAt() == null ? null : state.getDueAt()
+                            .toString()
+            ));
+        }
+
+        return items;
+    }
+
     // ------------------------------------------------------------------
     // 搜索
     // ------------------------------------------------------------------
@@ -596,48 +641,16 @@ public class ContentQueryService {
     }
 
     public List<KnowledgePointListItemVO> listFavorites(Long userId) {
-        List<UserFavorite> favorites = userFavoriteMapper.selectList(
-                Wrappers.<UserFavorite>lambdaQuery()
-                        .eq(UserFavorite::getUserId, userId)
-                        .orderByDesc(UserFavorite::getCreateTime)
-        );
-        if (favorites.isEmpty()) {
-            return List.of();
-        }
-
-        List<Long> kpIds = favorites.stream()
+        List<Long> kpIds = userFavoriteMapper.selectList(
+                        Wrappers.<UserFavorite>lambdaQuery()
+                                .eq(UserFavorite::getUserId, userId)
+                                .orderByDesc(UserFavorite::getCreateTime)
+                )
+                .stream()
                 .map(UserFavorite::getKpId)
                 .toList();
 
-        Map<Long, KnowledgePoint> kpById = knowledgePointMapper.selectByIds(kpIds)
-                .stream()
-                .collect(LinkedHashMap::new, (map, kp) -> map.put(kp.getId(), kp), Map::putAll);
-
-        Map<Long, ContentModule> modules = loadModules(new ArrayList<>(kpById.values()));
-        Map<Long, Integer> questionCounts = loadQuestionCounts(kpIds);
-        Map<Long, ReviewState> reviewStates = loadReviewStates(userId, kpIds);
-
-        return kpIds.stream()
-                .map(kpById::get)
-                .filter(Objects::nonNull)
-                .map(kp -> {
-                    ReviewState state = reviewStates.get(kp.getId());
-
-                    return new KnowledgePointListItemVO(
-                            kp.getSlug(),
-                            kp.getTitle(),
-                            moduleSlug(modules, kp.getModuleId()),
-                            moduleName(modules, kp.getModuleId()),
-                            splitTags(kp.getTags()),
-                            kp.getDifficulty(),
-                            kp.getFrequency(),
-                            questionCounts.getOrDefault(kp.getId(), 0),
-                            state == null ? null : state.getState(),
-                            state == null || state.getDueAt() == null ? null : state.getDueAt()
-                                    .toString()
-                    );
-                })
-                .toList();
+        return describeCards(kpIds, userId);
     }
 
     @Transactional
@@ -673,7 +686,7 @@ public class ContentQueryService {
      *
      * @return null 表示未指定模块（不过滤）；空集表示模块不存在
      */
-    private Set<Long> resolveModuleIds(String moduleSlug) {
+    public Set<Long> resolveModuleIds(String moduleSlug) {
         if (!isPresent(moduleSlug)) {
             return null;
         }
@@ -701,7 +714,11 @@ public class ContentQueryService {
         return ids;
     }
 
-    private Long findKpId(String slug) {
+    /**
+     * slug → 主键。对外只暴露 slug，内部需要 id 做关联时在这里换算，
+     * 是「外部用业务键、内部用主键」这条约定的唯一转换点。
+     */
+    public Long findKpId(String slug) {
         KnowledgePoint projection = knowledgePointMapper.selectOne(
                 Wrappers.<KnowledgePoint>lambdaQuery()
                         .select(KnowledgePoint::getId)
@@ -711,7 +728,7 @@ public class ContentQueryService {
         return projection == null ? null : projection.getId();
     }
 
-    private Long requireKpId(String slug) {
+    public Long requireKpId(String slug) {
         Long kpId = findKpId(slug);
         if (kpId == null) {
             throw new BizException(ResultCode.KNOWLEDGE_POINT_NOT_FOUND);

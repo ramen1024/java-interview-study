@@ -61,6 +61,19 @@ jis:
     # 相对路径按后端进程的工作目录解析，默认指向仓库根下的 content/
     root: ${JIS_CONTENT_ROOT:../content}
     auto-import: ${JIS_AUTO_IMPORT:true}
+  review:
+    # 每天最多引入多少张新卡，避免一上来就面对全部内容
+    new-cards-per-day: 10
+    # 单次队列最多返回多少张到期卡
+    due-cards-per-request: 30
+    # 目标保留率：调高则间隔变短、复习更频繁；0.9 是 FSRS 官方默认
+    desired-retention: 0.9
+    # 最长复习间隔（天），约 100 年
+    maximum-interval: 36500
+    # 给间隔加随机抖动，避免大批卡片在同一天集中到期
+    fuzzing-enabled: true
+    # 稳定性达到这么多天即视为已掌握，用于统计与雷达图
+    mastered-stability-days: 21
 
 springdoc:
   swagger-ui:

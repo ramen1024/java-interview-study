@@ -23,6 +23,25 @@ public class ReviewState {
     public static final int STATE_REVIEW = 2;
     public static final int STATE_RELEARNING = 3;
 
+    /**
+     * 状态的中文说明，用于前端直接展示。
+     *
+     * @param state 可为 null，表示还没有复习记录
+     */
+    public static String labelOf(Integer state) {
+        if (state == null) {
+            return "未复习";
+        }
+
+        return switch (state) {
+            case STATE_NEW -> "未复习";
+            case STATE_LEARNING -> "学习中";
+            case STATE_REVIEW -> "复习中";
+            case STATE_RELEARNING -> "重新学习";
+            default -> "未知状态";
+        };
+    }
+
     @TableId(type = IdType.AUTO)
     private Long id;
 
