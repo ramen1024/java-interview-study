@@ -32,6 +32,11 @@ mysql -uroot -p < backend/src/main/resources/db/schema.sql   # 建库，脚本�
 验证要求：后端改动跑 `mvn test`，前端改动跑 `pnpm build`。**两者都必须真正执行过**，
 不要只凭「看起来对」就报告完成。
 
+测试现状（不要误以为有完备测试）：`backend/src/test` 下**只有一个测试文件**
+（FSRS 调度的 15 个用例），前端没有任何测试框架。判分规则、Markdown 解析器的
+校验分支、导入幂等性这些「错了不报错、只是行为不对」的地方目前**没有自动化覆盖**，
+改到它们时要靠手工构造输入验证。新增测试是受欢迎的。
+
 ## 环境前提（易踩）
 
 - **后端端口是 8081，不是 8080**——本机 8080 被另一个服务占用，改回去会启动失败
@@ -40,6 +45,17 @@ mysql -uroot -p < backend/src/main/resources/db/schema.sql   # 建库，脚本�
   `JIS_DB_HOST` / `JIS_DB_PORT` / `JIS_JWT_SECRET` / `JIS_CONTENT_ROOT` / `JIS_AUTO_IMPORT`
 - 启动时会自动导入 `content/`。导入失败**不会**阻止应用启动（这是有意的）
 - 前端的 `pnpm-workspace.yaml` 是 pnpm 11 自动生成的（记录允许的较新版本），别删
+- **重启后端要杀掉 fork 出的 java 进程**：`mvn spring-boot:run` 会另起一个 JVM，
+  只结束 Maven 进程的话 8081 仍被占用，再启动会报 `Port 8081 was already in use`。
+  Windows 下按端口找 PID 再结束：
+
+  ```bash
+  PID=$(netstat -ano | grep ":8081" | grep LISTENING | head -1 | awk '{print $NF}')
+  taskkill //PID $PID //F
+  ```
+
+- 需要浏览器验证时要**两个服务都起**（8081 后端 + 5173 前端）。前端通过 Vite 代理
+  访问 `/api`，只起前端的话所有请求都会失败
 
 ## 架构约定（改动前必读）
 
