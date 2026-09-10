@@ -38,6 +38,20 @@ public class PageResult<T> {
     }
 
     /**
+     * 已自行完成映射时使用：保留源分页的元信息，记录换成本次映射的结果。
+     * 相比 {@link #of(IPage, Function)} 更适合映射过程还需要额外的批量查询的场景。
+     */
+    public static <T> PageResult<T> of(List<T> records, IPage<?> metaSource) {
+        return new PageResult<>(
+                records,
+                metaSource.getTotal(),
+                metaSource.getCurrent(),
+                metaSource.getSize(),
+                metaSource.getPages()
+        );
+    }
+
+    /**
      * 分页转换：把实体分页映射为 VO 分页，保留分页元信息。
      */
     public static <E, T> PageResult<T> of(IPage<E> source, Function<E, T> mapper) {

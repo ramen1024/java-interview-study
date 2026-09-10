@@ -141,7 +141,7 @@ CREATE TABLE IF NOT EXISTS `quiz_question`
     `type`         VARCHAR(16)     NOT NULL,
     `stem_md`      TEXT            NOT NULL COMMENT '题干，支持 Markdown 与代码块',
     `options_json` JSON            NULL COMMENT '选项 [{"key":"A","text":"..."}]',
-    `answer`       VARCHAR(255)    NOT NULL COMMENT 'CHOICE: A；MULTI: ABC；JUDGE: T/F',
+    `answer`       VARCHAR(255)    NOT NULL DEFAULT '' COMMENT 'CHOICE: A；MULTI: ABC；JUDGE: T/F；CLOZE 用空字符串（判分改看 blanks_json）',
     `blanks_json`  JSON            NULL COMMENT 'CLOZE：每空可接受答案的数组，如 [["尾插","尾部插入"]]',
     `analysis_md`  MEDIUMTEXT      NULL COMMENT '解析',
     `difficulty`   TINYINT         NOT NULL DEFAULT 2,

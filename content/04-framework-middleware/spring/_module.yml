@@ -1,0 +1,5 @@
+name: Spring
+slug: framework-spring
+description: IoC 与 Bean 生命周期、循环依赖、AOP、事务传播与失效、自动配置
+icon: Connection
+sort: 1

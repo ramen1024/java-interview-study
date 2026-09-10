@@ -1,0 +1,5 @@
+name: Redis
+slug: framework-redis
+description: 数据结构与底层编码、持久化、内存淘汰、缓存三大问题、分布式锁
+icon: DataLine
+sort: 3

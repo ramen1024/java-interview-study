@@ -1,0 +1,5 @@
+name: MySQL
+slug: framework-mysql
+description: 索引与 B+ 树、事务隔离与 MVCC、锁、explain 与慢查询优化
+icon: Coin
+sort: 2
