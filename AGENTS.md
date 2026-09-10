@@ -139,6 +139,30 @@ FSRS 调度（15 例）、判分规则（28 例）、搜索切词（11 例）、
   包管理器不会拦你，装上去跑构建才会发现崩。npm 上 `typescript` 的 `latest`
   已经是 7.x，所以别随手执行 `pnpm add -D typescript`
 
+  *这**不是**永久性死路，将来升级有明确路径。以下结论截至 2026-09，
+  生态还在动，动手前请重新核实：*
+
+  - **为什么升不了**：TS 7.0 把编译器 API 从根导出移走，而且**没有 plugin 机制**，
+    依赖旧 API 的工具（vue-tsc、language server、tsserver plugin）不是
+    「适配一下」能解决的。真正的 tsgo 集成被 TS 7.1 计划中的新 API 阻塞
+    （microsoft/TypeScript#63800）。跟踪议题 vuejs/language-tools#5381 已 completed：
+    https://github.com/vuejs/language-tools/issues/5381
+  - **当前唯一官方认可的临时方案**：`typescript-native-bridge`（TNB），
+    drop-in 的 `typescript` 替身，保留经典 API 但引擎桥接到 tsgo。
+    维护者原话「you must use typescript-native-bridge now」，language-tools
+    仓库自己也已迁移过去（PR #6129，vue-tsc 自查 12.8s → 4.7s）：
+    https://github.com/vuejs/language-tools/issues/6156
+    用法是用路径覆盖把 `typescript` 指向 TNB，然后照常跑 `vue-tsc`。
+    **两个注意点**：必须精确 pin（caret 匹配不到 prerelease）；
+    其自述检查器行为是 **tsgo 的语义、不是 stock TS 的**
+  - **终点**：TS 7.1 的 content mapper，即 vuejs/language-tools#6170
+    「content mapper (v4 alpha)」，目前仍是 draft。届时用 tsc 自带的 content mapper
+    直接检查 `.vue`，**不再需要 vue-tsc 这个二进制**，命令变成
+    `tsc --runExternalCode`，官方明确说落地后会**弃用 vue-tsc**：
+    https://github.com/vuejs/language-tools/pull/6170
+  - **迁移时机**：等 v4 正式发到 npm、迁移目标明确后再动。在那之前，
+    为「版本号更新」去换工具链稳定性不划算（TNB 是预发布包，还会改变检查器语义）
+
 **前端**
 
 - Markdown 渲染统一走 `src/composables/useMarkdown.ts`，不要在组件里另建 markdown-it 实例
