@@ -11,7 +11,7 @@ Java 面试学习站。把「读完八股」变成「讲得出来」的学习系
 ```
 content/     内容源，Markdown + YAML frontmatter（唯一事实源，git 管理）
 docs/        content-spec.md（卡片编写契约）、content-backlog.md（待写清单）
-backend/     Spring Boot，包结构 com.jis.{auth,content,review,quiz,stats,importer,common,config}
+backend/     Spring Boot，包结构 com.jis.{auth,content,review,quiz,stats,importer,backup,common,config}
 frontend/    Vue 3 SPA，src/{api,stores,router,layouts,components,composables,views}
 ```
 
@@ -19,8 +19,9 @@ frontend/    Vue 3 SPA，src/{api,stores,router,layouts,components,composables,v
 
 ```bash
 cd backend && mvn spring-boot:run          # 后端，端口 8081
-cd backend && mvn test                     # 单元测试（目前仅 FSRS 调度）
+cd backend && mvn test                     # 全部单元测试，58 个用例
 cd backend && mvn test -Dtest=FsrsSchedulerTest
+cd backend && mvn test -Dtest=ContentCardValidationTest   # 校验 content/ 全部卡片
 
 cd frontend && pnpm dev                    # 前端，5173，/api 代理到 8081
 cd frontend && pnpm build                  # vue-tsc --noEmit && vite build（即类型检查）
@@ -32,10 +33,12 @@ mysql -uroot -p < backend/src/main/resources/db/schema.sql   # 建库，脚本�
 验证要求：后端改动跑 `mvn test`，前端改动跑 `pnpm build`。**两者都必须真正执行过**，
 不要只凭「看起来对」就报告完成。
 
-测试现状（不要误以为有完备测试）：`backend/src/test` 下**只有一个测试文件**
-（FSRS 调度的 15 个用例），前端没有任何测试框架。判分规则、Markdown 解析器的
-校验分支、导入幂等性这些「错了不报错、只是行为不对」的地方目前**没有自动化覆盖**，
-改到它们时要靠手工构造输入验证。新增测试是受欢迎的。
+测试现状（不要误以为有完备测试）：`backend/src/test` 下有 4 个测试类——
+FSRS 调度（15 例）、判分规则（28 例）、搜索切词（11 例）、全量卡片契约校验（4 例）。
+前端没有任何测试框架。**仍无自动化覆盖**的地方：`MarkdownCardParser` 的校验分支
+（它靠卡片契约校验间接覆盖）、导入幂等性（靠真实导入两次比对行数）、
+以及所有接口行为——没有 `@SpringBootTest` 级别的集成测试，
+改接口时要靠手工或浏览器实测。新增测试是受欢迎的。
 
 ## 环境前提（易踩）
 
@@ -109,6 +112,18 @@ mysql -uroot -p < backend/src/main/resources/db/schema.sql   # 建库，脚本�
   `ContentCache` 内部自行构造
 - 失效用**版本号**（`jis:cache:v{n}:...` 加 `INCR`），不要改成遍历删除——
   `KEYS` 会阻塞 Redis
+
+**搜索（MySQL ngram 全文索引）**
+
+- **不要把关键词整串塞进布尔模式**。`ngram_token_size = 2` 时 `+缓存击穿`
+  等价于要求这四个字**连续出现**，标题「缓存穿透、击穿、雪崩」被顿号断开就搜不到。
+  更坑的是第一级检索**非空即返回**：只要命中了一张次要卡片，最该被看到的卡片就会
+  彻底消失，而且全程不报错。查询串必须由 `com.jis.content.search.SearchTerms`
+  构造，它把中文切成不重叠的双字词再各自加 `+`
+- 切词时**单字不能单独作为必需词**——ngram 索引里没有单字词，
+  留着会让整个「与」查询什么都匹配不到。`SearchTerms` 因此把末尾剩的单字并进上一块
+  （剩三字则整块保留）
+- 标点类片段要丢弃：`+、` 这种必需词一样会把结果拖成空
 
 **依赖版本**
 
