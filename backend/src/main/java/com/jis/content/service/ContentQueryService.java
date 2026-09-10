@@ -10,7 +10,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -30,6 +29,7 @@ import com.jis.content.dto.ModuleTreeVO;
 import com.jis.content.dto.RelatedKpVO;
 import com.jis.content.dto.SearchHitVO;
 import com.jis.content.dto.UserCardStateVO;
+import com.jis.content.search.SearchTerms;
 import com.jis.content.entity.ContentModule;
 import com.jis.content.entity.FollowUp;
 import com.jis.content.entity.KnowledgePoint;
@@ -510,8 +510,12 @@ public class ContentQueryService {
      * 三级检索，精度优先、逐级放宽：
      *
      * <ol>
-     *   <li><b>布尔短语</b>：把每个词加双引号，要求 ngram 片段连续出现。
-     *       命中少但准，是「缓存穿透」这类中文词组的主要来源。</li>
+     *   <li><b>布尔必需词</b>：把关键词切成若干必需词并要求全部出现（{@code +词}）。
+     *       切词规则见 {@link SearchTerms}——不能拿整串直接去匹配，否则没有空格的
+     *       中文复合词会退化成语义上的短语匹配：搜「缓存击穿」时，标题写作
+     *       「缓存穿透、击穿、雪崩」的卡片因为中间隔着标点而搜不到，反倒是一张
+     *       恰好连排出现过该词组的次要卡片命中了，于是这一级非空即返回，
+     *       最该被看到的卡片被挡在结果之外。</li>
      *   <li><b>自然语言</b>：bigram 或匹配 + 相关度排序。召回更宽，
      *       但会把只提到「缓存」的卡片也带进来，所以放在第二级。</li>
      *   <li><b>LIKE</b>：兜底。ngram_token_size 默认为 2，单字查询
@@ -523,42 +527,24 @@ public class ContentQueryService {
             return knowledgePointMapper.searchByLike(keyword, SEARCH_LIMIT);
         }
 
-        List<KnowledgePoint> hits = knowledgePointMapper.searchByPhrase(
-                toRequiredTermsQuery(keyword),
-                SEARCH_LIMIT
-        );
-        if (!hits.isEmpty()) {
-            return hits;
+        // 关键词可能全是标点，此时切不出任何检索词，直接进入下一级
+        String booleanQuery = SearchTerms.toBooleanQuery(keyword);
+        if (!booleanQuery.isBlank()) {
+            List<KnowledgePoint> requiredTermHits = knowledgePointMapper.searchByRequiredTerms(
+                    booleanQuery,
+                    SEARCH_LIMIT
+            );
+            if (!requiredTermHits.isEmpty()) {
+                return requiredTermHits;
+            }
         }
 
-        hits = knowledgePointMapper.searchByKeyword(keyword, SEARCH_LIMIT);
+        List<KnowledgePoint> hits = knowledgePointMapper.searchByKeyword(keyword, SEARCH_LIMIT);
         if (!hits.isEmpty()) {
             return hits;
         }
 
         return knowledgePointMapper.searchByLike(keyword, SEARCH_LIMIT);
-    }
-
-    /**
-     * 构造布尔模式查询串：每个词加 {@code +} 前缀变成「必需词」，词间即「与」。
-     *
-     * <p>为什么用 {@code +词} 而不是 {@code "词"}：在 ngram 分词下，
-     * 加引号的短语要求 ngram 片段**连续**出现，中文里换行、标点断开的
-     * 情况（「缓存穿透、击穿、雪崩」）就搜不到；而 {@code +词} 只要求
-     * 词存在，同时把多词查询从「或」收紧成「与」——
-     * 实测 {@code +缓存 +击穿} 能精确命中目标卡片，
-     * 而自然语言模式会把只提到「缓存」的 JVM 卡片也带进来。
-     *
-     * <p>双引号与前后空白会被剔除，避免用户输入破坏查询串结构。
-     */
-    private String toRequiredTermsQuery(String keyword) {
-        String sanitized = keyword.replace("\"", " ")
-                .strip();
-
-        return Arrays.stream(sanitized.split("\\s+"))
-                .filter(part -> !part.isEmpty())
-                .map(part -> "+" + part)
-                .collect(Collectors.joining(" "));
     }
 
     /**

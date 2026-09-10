@@ -18,7 +18,8 @@ public interface KnowledgePointMapper extends BaseMapper<KnowledgePoint> {
      * 「与」语义。这比自然语言模式精确得多——自然语言模式是 bigram 或匹配，
      * 搜「缓存击穿」会把只提到「缓存」的 JVM 卡片也带出来。
      *
-     * <p>查询串由 {@code ContentQueryService#toRequiredTermsQuery} 构造。
+     * <p>查询串由 {@link com.jis.content.search.SearchTerms} 构造：中文会被切成
+     * 不重叠的双字词再各自加 {@code +}，否则无空格的中文复合词会退化成短语匹配。
      */
     @Select("""
             SELECT *
@@ -27,7 +28,7 @@ public interface KnowledgePointMapper extends BaseMapper<KnowledgePoint> {
             ORDER BY MATCH(title, elevator_answer, detail_md, tags) AGAINST(#{booleanQuery} IN BOOLEAN MODE) DESC
             LIMIT #{limit}
             """)
-    List<KnowledgePoint> searchByPhrase(
+    List<KnowledgePoint> searchByRequiredTerms(
             @Param("booleanQuery") String booleanQuery,
             @Param("limit") int limit
     );
