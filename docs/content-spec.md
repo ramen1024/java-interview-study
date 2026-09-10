@@ -209,6 +209,18 @@ options:
   B: AfterConstruct 与 @PostConstruct 的区别               # 不以特殊字符开头，可省略引号
 ```
 
+**值中间出现「冒号 + 空格」也会报错**（会被当成映射起始），
+报错信息是 `mapping values are not allowed here`。异常名里带冒号时
+最容易踩到：
+
+```yaml
+# ❌ 报 YAML 语法错误
+stem: 当线程池报 OutOfMemoryError: unable to create native thread 时……
+
+# ✅ 加引号
+stem: "当线程池报 OutOfMemoryError: unable to create native thread 时……"
+```
+
 同理，值中间出现「空格 + `#`」会被当成注释，例如 `A: 用 AOP # 这里开始是注释`。
 需要保留时也要加引号。
 
@@ -251,14 +263,26 @@ questions:
 
 ## 五、完整示例
 
-`content/` 下的前六张卡片就是符合本规范的样板，可直接作为新卡片的模板：
+`content/` 下已有的卡片都可以作为模板，其中这几张结构最完整，建议新卡片照着写：
 
-- `01-java-basics/01-hashmap-internals.md` —— 六段式最完整的示范
-- `01-java-basics/02-hashmap-resize.md`
-- `02-concurrency/01-thread-pool-parameters.md`
-- `03-jvm/01-runtime-memory-layout.md`
-- `04-framework-middleware/spring/01-bean-lifecycle.md`
-- `04-framework-middleware/redis/01-cache-penetration-breakdown-avalanche.md`
+| 卡片 | 可参考之处 |
+|---|---|
+| `01-java-basics/01-hashmap-internals.md` | 六段式最完整，追问链三层嵌套 + 挖空题的四个反引号写法 |
+| `02-concurrency/01-thread-pool-parameters.md` | 执行流程用代码逐段对照讲，追问链围绕「顺序记反了会怎样」展开 |
+| `03-jvm/02-garbage-collection-algorithms.md` | 用表格对比三种算法，追问链落到「为什么新生代复制、老年代整理」的成本模型 |
+| `04-framework-middleware/spring/02-circular-dependency.md` | 时序图 + 源码片段 + 「为什么必须三级」的反证法 |
+| `04-framework-middleware/mysql/02-index-b-plus-tree.md` | 带定量计算（三层 B+ 树能存多少行），把定性描述变成可验证结论 |
+
+其余卡片：`01-java-basics/02-hashmap-thread-unsafe.md`、`03-hashmap-resize.md`、
+`04-concurrenthashmap.md`、`02-concurrency/02-why-not-executors.md`、
+`03-jvm/01-runtime-memory-layout.md`、`03-oom-troubleshooting.md`、
+`04-framework-middleware/spring/01-bean-lifecycle.md`、
+`spring/03-transaction-failure-scenarios.md`、
+`mysql/01-mvcc-and-isolation-levels.md`、
+`redis/01-cache-penetration-breakdown-avalanche.md`、
+`redis/02-distributed-lock.md`、`redis/03-cache-consistency.md`。
+
+待编写清单见 [content-backlog.md](content-backlog.md)。
 
 ---
 
