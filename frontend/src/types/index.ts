@@ -254,3 +254,63 @@ export interface ImportResultVO {
   warnings: string[]
   errors: string[]
 }
+
+/* ------------------------------------------------------------------ 备份 */
+
+export interface ReviewStateItem {
+  cardSlug: string
+  state: number
+  stability: number
+  difficulty: number
+  reps: number
+  lapses: number
+  dueAt: string
+  lastReviewAt: string | null
+}
+
+export interface NoteItem {
+  cardSlug: string
+  contentMd: string
+  updateTime: string | null
+}
+
+export interface FavoriteItem {
+  cardSlug: string
+  createTime: string | null
+}
+
+export interface QuizRecordItem {
+  questionQKey: string
+  userAnswer: string
+  correct: boolean
+  answeredAt: string
+}
+
+export interface StudyDailyItem {
+  statDate: string
+  reviewCount: number
+  newCount: number
+  quizCount: number
+  correctCount: number
+  durationSec: number
+}
+
+export interface BackupVO {
+  version: number
+  exportedAt: string
+  reviewStates: ReviewStateItem[]
+  notes: NoteItem[]
+  favorites: FavoriteItem[]
+  quizRecords: QuizRecordItem[]
+  studyDaily: StudyDailyItem[]
+}
+
+export interface BackupSummaryVO {
+  reviewStateCount: number
+  noteCount: number
+  favoriteCount: number
+  quizRecordCount: number
+  studyDailyCount: number
+  skippedCount: number
+  warnings: string[]
+}

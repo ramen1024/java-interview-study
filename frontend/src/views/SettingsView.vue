@@ -2,16 +2,21 @@
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, ref } from 'vue'
 
+import { exportBackup, importBackup } from '@/api/backup'
 import { reimportContent } from '@/api/content'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
-import type { ImportResultVO } from '@/types'
+import type { BackupVO, ImportResultVO } from '@/types'
 
 const auth = useAuthStore()
 const ui = useUiStore()
 
 const importing = ref(false)
 const importResult = ref<ImportResultVO | null>(null)
+
+const backupInput = ref<HTMLInputElement | null>(null)
+const exporting = ref(false)
+const importingBackup = ref(false)
 
 const userInitial = computed(() => auth.displayName.charAt(0).toUpperCase() || '?')
 
@@ -38,6 +43,99 @@ async function runImport(): Promise<void> {
     }
   } finally {
     importing.value = false
+  }
+}
+
+function backupFileName(): string {
+  const now = new Date()
+  const day = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+  ].join('')
+
+  return `jis-backup-${day}.json`
+}
+
+async function exportData(): Promise<void> {
+  exporting.value = true
+  try {
+    const data = await exportBackup()
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: 'application/json',
+    })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = backupFileName()
+    link.click()
+    URL.revokeObjectURL(url)
+
+    ElMessage.success('学习数据已导出')
+  } catch {
+    // request 层已弹出错误提示，这里不再重复
+  } finally {
+    exporting.value = false
+  }
+}
+
+function pickBackupFile(): void {
+  backupInput.value?.click()
+}
+
+async function onBackupFileChange(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  // 清空 value，否则连续选择同一个文件不会再次触发 change
+  input.value = ''
+  if (!file) {
+    return
+  }
+
+  let backup: BackupVO
+  try {
+    backup = JSON.parse(await file.text()) as BackupVO
+  } catch {
+    ElMessage.error('文件不是合法的 JSON，无法解析')
+    return
+  }
+
+  if (!backup || backup.version !== 1) {
+    ElMessage.error('备份文件版本不受支持，请选择由本站导出的文件')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      '导入会覆盖同卡片、同题目的现有记录：复习进度、笔记、收藏与每日统计以备份为准，答题记录只追加不重复。确定继续？',
+      '导入学习数据',
+      { confirmButtonText: '开始导入', cancelButtonText: '取消', type: 'warning' },
+    )
+  } catch {
+    return
+  }
+
+  importingBackup.value = true
+  try {
+    const result = await importBackup(backup)
+    const restored =
+      result.reviewStateCount +
+      result.noteCount +
+      result.favoriteCount +
+      result.quizRecordCount +
+      result.studyDailyCount
+    const message = `导入完成：恢复 ${restored} 条，跳过 ${result.skippedCount} 条`
+
+    if (result.skippedCount > 0) {
+      ElMessage.warning(message)
+    } else {
+      ElMessage.success(message)
+    }
+  } catch {
+    // request 层已弹出错误提示
+  } finally {
+    importingBackup.value = false
   }
 }
 </script>
@@ -137,6 +235,38 @@ async function runImport(): Promise<void> {
 
       <section class="jis-card">
         <h3 class="jis-section-title">
+          <el-icon><Download /></el-icon>
+          数据备份
+        </h3>
+        <p class="row__hint jis-muted section-text">
+          复习进度、笔记、收藏与错题本只保存在本机数据库里，换机器就会丢失。
+          导出一份 JSON 自行保存，换环境后在同一页面导入即可恢复。导入按卡片、
+          题目逐一覆盖，同一份文件重复导入结果一致；备份里已被删除的卡片会自动跳过。
+        </p>
+
+        <div class="backup-actions">
+          <el-button type="primary" :loading="exporting" @click="exportData">
+            <el-icon><Download /></el-icon>
+            导出学习数据
+          </el-button>
+
+          <el-button :loading="importingBackup" @click="pickBackupFile">
+            <el-icon><Upload /></el-icon>
+            导入学习数据
+          </el-button>
+        </div>
+
+        <input
+          ref="backupInput"
+          class="backup-input"
+          type="file"
+          accept="application/json,.json"
+          @change="onBackupFileChange"
+        />
+      </section>
+
+      <section class="jis-card">
+        <h3 class="jis-section-title">
           <el-icon><InfoFilled /></el-icon>
           关于
         </h3>
@@ -215,6 +345,16 @@ code {
   background: var(--jis-surface-muted);
   border: 1px solid var(--jis-border);
   font-size: 12.5px;
+}
+
+.backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.backup-input {
+  display: none;
 }
 
 .import-result {
