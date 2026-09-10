@@ -1,0 +1,419 @@
+/* ============================================================
+   全局样式与设计变量
+   ------------------------------------------------------------
+   暗色模式复用 Element Plus 在 html 上打的 .dark 类，
+   自己的变量也跟着切换，避免两套主题各管一半。
+   ============================================================ */
+
+:root {
+  --jis-accent: #6366f1;
+  --jis-accent-soft: #eef0ff;
+  --jis-accent-strong: #4f46e5;
+
+  --jis-bg: #f6f7fb;
+  --jis-surface: #ffffff;
+  --jis-surface-muted: #fafbfd;
+  --jis-border: #e6e8f0;
+  --jis-text: #1f2430;
+  --jis-text-secondary: #5b6275;
+  --jis-text-muted: #8b93a7;
+
+  --jis-radius: 10px;
+  --jis-radius-sm: 6px;
+  --jis-shadow: 0 1px 2px rgba(20, 24, 40, 0.04), 0 6px 18px rgba(20, 24, 40, 0.05);
+  --jis-shadow-hover: 0 2px 6px rgba(20, 24, 40, 0.07), 0 14px 32px rgba(20, 24, 40, 0.09);
+
+  --jis-elevator: #f0fdf4;
+  --jis-elevator-border: #86efac;
+  --jis-pitfall: #fef2f2;
+  --jis-pitfall-border: #fca5a5;
+  --jis-bonus: #fffbeb;
+  --jis-bonus-border: #fcd34d;
+  --jis-followup: #eff6ff;
+  --jis-followup-border: #93c5fd;
+  --jis-version: #faf5ff;
+  --jis-version-border: #d8b4fe;
+}
+
+html.dark {
+  --jis-accent: #818cf8;
+  --jis-accent-soft: #262a45;
+  --jis-accent-strong: #a5b4fc;
+
+  --jis-bg: #14161d;
+  --jis-surface: #1b1e28;
+  --jis-surface-muted: #20242f;
+  --jis-border: #2c313d;
+  --jis-text: #e6e8ef;
+  --jis-text-secondary: #a8afc0;
+  --jis-text-muted: #7b8296;
+
+  --jis-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 18px rgba(0, 0, 0, 0.25);
+  --jis-shadow-hover: 0 2px 6px rgba(0, 0, 0, 0.35), 0 14px 32px rgba(0, 0, 0, 0.35);
+
+  --jis-elevator: #16241c;
+  --jis-elevator-border: #2f6b45;
+  --jis-pitfall: #2a1a1c;
+  --jis-pitfall-border: #7f3f42;
+  --jis-bonus: #2a2418;
+  --jis-bonus-border: #7f6630;
+  --jis-followup: #17202f;
+  --jis-followup-border: #37507a;
+  --jis-version: #221a2e;
+  --jis-version-border: #5b4080;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background-color: var(--jis-bg);
+  color: var(--jis-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--jis-accent);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--jis-accent-strong);
+}
+
+code,
+pre,
+kbd {
+  font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, Monaco, 'Courier New', monospace;
+}
+
+/* Element Plus 主色跟随品牌色，避免默认蓝色与紫色调冲突 */
+:root {
+  --el-color-primary: var(--jis-accent);
+  --el-border-radius-base: var(--jis-radius-sm);
+}
+
+/* ------------------------------------------------------------ 通用容器 */
+
+.jis-page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 24px 24px 64px;
+}
+
+.jis-page--wide {
+  max-width: 1280px;
+}
+
+.jis-page-header {
+  margin-bottom: 20px;
+}
+
+.jis-page-title {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.jis-page-subtitle {
+  margin: 0;
+  color: var(--jis-text-secondary);
+  font-size: 14px;
+}
+
+.jis-card {
+  background: var(--jis-surface);
+  border: 1px solid var(--jis-border);
+  border-radius: var(--jis-radius);
+  padding: 18px 20px;
+  box-shadow: var(--jis-shadow);
+}
+
+.jis-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.jis-muted {
+  color: var(--jis-text-muted);
+}
+
+.jis-empty {
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--jis-text-muted);
+}
+
+/* ------------------------------------------------------------ Markdown */
+
+.md-body {
+  line-height: 1.85;
+  word-wrap: break-word;
+}
+
+.md-body > *:first-child {
+  margin-top: 0;
+}
+
+.md-body > *:last-child {
+  margin-bottom: 0;
+}
+
+.md-body h1,
+.md-body h2,
+.md-body h3,
+.md-body h4,
+.md-body h5,
+.md-body h6 {
+  margin: 1.5em 0 0.6em;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.md-body h2 {
+  font-size: 18px;
+}
+
+.md-body h3 {
+  font-size: 16px;
+}
+
+.md-body h4 {
+  font-size: 15px;
+}
+
+.md-body p {
+  margin: 0.75em 0;
+}
+
+.md-body ul,
+.md-body ol {
+  margin: 0.75em 0;
+  padding-left: 1.6em;
+}
+
+.md-body li {
+  margin: 0.3em 0;
+}
+
+.md-body li > p {
+  margin: 0.3em 0;
+}
+
+.md-body blockquote {
+  margin: 1em 0;
+  padding: 8px 16px;
+  border-left: 3px solid var(--jis-accent);
+  background: var(--jis-surface-muted);
+  border-radius: 0 var(--jis-radius-sm) var(--jis-radius-sm) 0;
+  color: var(--jis-text-secondary);
+}
+
+.md-body code:not(pre code) {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--jis-surface-muted);
+  border: 1px solid var(--jis-border);
+  font-size: 0.9em;
+  color: #b5397a;
+}
+
+html.dark .md-body code:not(pre code) {
+  color: #f0a3c8;
+}
+
+.md-body pre {
+  margin: 1em 0;
+  padding: 14px 16px;
+  border-radius: var(--jis-radius-sm);
+  background: #f8f9fc;
+  border: 1px solid var(--jis-border);
+  overflow-x: auto;
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+
+html.dark .md-body pre {
+  background: #12141b;
+}
+
+.md-body pre code {
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.md-body table {
+  width: 100%;
+  margin: 1em 0;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.md-body th,
+.md-body td {
+  padding: 8px 12px;
+  border: 1px solid var(--jis-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.md-body th {
+  background: var(--jis-surface-muted);
+  font-weight: 650;
+}
+
+.md-body hr {
+  margin: 1.5em 0;
+  border: none;
+  border-top: 1px solid var(--jis-border);
+}
+
+.md-body img {
+  max-width: 100%;
+  border-radius: var(--jis-radius-sm);
+}
+
+/* ------------------------------------------------------------ 代码高亮 */
+
+.hljs-comment,
+.hljs-quote {
+  color: #8b93a7;
+  font-style: italic;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal {
+  color: #a626a4;
+}
+
+.hljs-string,
+.hljs-doctag {
+  color: #50a14f;
+}
+
+.hljs-number,
+.hljs-symbol,
+.hljs-bullet {
+  color: #986801;
+}
+
+.hljs-title,
+.hljs-section,
+.hljs-name {
+  color: #4078f2;
+}
+
+.hljs-type,
+.hljs-class .hljs-title,
+.hljs-built_in {
+  color: #c18401;
+}
+
+.hljs-attr,
+.hljs-attribute,
+.hljs-variable {
+  color: #e45649;
+}
+
+.hljs-meta {
+  color: #986801;
+}
+
+html.dark .hljs-comment,
+html.dark .hljs-quote {
+  color: #5c6370;
+}
+
+html.dark .hljs-keyword,
+html.dark .hljs-selector-tag,
+html.dark .hljs-literal {
+  color: #c678dd;
+}
+
+html.dark .hljs-string,
+html.dark .hljs-doctag {
+  color: #98c379;
+}
+
+html.dark .hljs-number,
+html.dark .hljs-symbol,
+html.dark .hljs-bullet {
+  color: #d19a66;
+}
+
+html.dark .hljs-title,
+html.dark .hljs-section,
+html.dark .hljs-name {
+  color: #61afef;
+}
+
+html.dark .hljs-type,
+html.dark .hljs-built_in,
+html.dark .hljs-class .hljs-title {
+  color: #e5c07b;
+}
+
+html.dark .hljs-attr,
+html.dark .hljs-attribute,
+html.dark .hljs-variable {
+  color: #e06c75;
+}
+
+/* ------------------------------------------------------------ 骨架/滚动条 */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--jis-border);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--jis-text-muted);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.18s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+@media (max-width: 768px) {
+  .jis-page {
+    padding: 16px 14px 48px;
+  }
+
+  .jis-page-title {
+    font-size: 19px;
+  }
+}
