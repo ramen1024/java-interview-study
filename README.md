@@ -35,6 +35,36 @@
 
 ## 快速开始
 
+### 一键启动（推荐）
+
+```bash
+bash dev.sh
+```
+
+一条命令做完体检和启动：先探 MySQL / Redis 是否可达、`jis` 库是否存在，
+再拉起后端 8081 与前端 5173，把两边日志带 `[后端]` / `[前端]` 前缀实时打到当前终端，
+`Ctrl+C` 一次性停掉本次启动的服务（含 Maven fork 出的那个 JVM，不会留下占用 8081 的残留）。
+
+```bash
+bash dev.sh --init-db     # 顺带建库建表（schema.sql 幂等）
+bash dev.sh --backend     # 只起后端；--frontend 只起前端
+bash dev.sh --restart     # 已在跑的服务也重启（默认是复用）
+bash dev.sh --force       # 端口被别的进程占用时强制结束它
+bash dev.sh --no-import   # 跳过启动时的 content/ 自动导入
+bash dev.sh --help        # 完整用法
+```
+
+Windows 下也可以直接双击 `dev.cmd`（它只是找到 Git Bash 再把参数转给 `dev.sh`；
+想要干净的 `Ctrl+C`，还是建议在 Git Bash 里执行）。
+
+两个设计上的注意点：**已在运行且能响应的服务默认复用，不会被杀掉**（前端 Vite 只监听
+`::1`，所以探测用 `localhost` 而不是 `127.0.0.1`）；**端口被非本项目的进程占用时会拒绝启动**
+并打印对方 PID，不会擅自结束别人的服务，除非显式加 `--force`。
+
+日志写在 `logs/backend.log` 与 `logs/frontend.log`，该目录已在 `.gitignore` 里。
+
+下面第 1~4 步是手工分步做法，想单独控制某个服务或在 CI 里跑时用。
+
 ### 1. 建库
 
 ```bash

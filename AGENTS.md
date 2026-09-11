@@ -18,7 +18,11 @@ frontend/    Vue 3 SPA，src/{api,stores,router,layouts,components,composables,v
 ## 命令
 
 ```bash
-cd backend && mvn spring-boot:run          # 后端，端口 8081
+bash dev.sh                                # 一键起前后端（体检 → 8081 → 5173 → 实时日志 → Ctrl+C 一起停）
+bash dev.sh --backend                      # 只起后端；--frontend 只起前端
+bash dev.sh --help                         # 全部参数（--init-db / --restart / --force / --no-import）
+
+cd backend && mvn spring-boot:run          # 后端，端口 8081（手动分步时用）
 cd backend && mvn test                     # 全部单元测试，58 个用例
 cd backend && mvn test -Dtest=FsrsSchedulerTest
 cd backend && mvn test -Dtest=ContentCardValidationTest   # 校验 content/ 全部卡片
@@ -29,6 +33,12 @@ cd frontend && pnpm type-check
 
 mysql -uroot -p < backend/src/main/resources/db/schema.sql   # 建库，脚本幂等
 ```
+
+`dev.sh` 的两条行为约定，改它之前先看脚本头部的注释：已在运行且**能响应 HTTP** 的服务
+默认复用、不会被杀（Vite 只监听 `::1`，探测必须用 `localhost`）；端口被非本项目的进程
+占用时会拒绝启动并打印对方 PID，不会擅自结束别人的服务，除非显式 `--force`。
+Windows 下 `dev.cmd` 是双击入口，**内容必须保持纯 ASCII**——cmd 按本地代码页逐字节
+解析批处理，UTF-8 中文会把引号和参数撕坏（已踩过）。
 
 验证要求：后端改动跑 `mvn test`，前端改动跑 `pnpm build`。**两者都必须真正执行过**，
 不要只凭「看起来对」就报告完成。
@@ -50,6 +60,7 @@ FSRS 调度（15 例）、判分规则（28 例）、搜索切词（11 例）、
 - 前端的 `pnpm-workspace.yaml` 是 pnpm 11 自动生成的（记录允许的较新版本），别删
 - **重启后端要杀掉 fork 出的 java 进程**：`mvn spring-boot:run` 会另起一个 JVM，
   只结束 Maven 进程的话 8081 仍被占用，再启动会报 `Port 8081 was already in use`。
+  `bash dev.sh` 已按端口自动处理（收工只认端口，不认 `$!`）；手动起的时候在
   Windows 下按端口找 PID 再结束：
 
   ```bash
